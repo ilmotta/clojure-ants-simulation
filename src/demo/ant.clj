@@ -1,6 +1,7 @@
 (ns demo.ant
   (:require [demo.config :refer [config]]
-            [demo.world :as world]))
+            [demo.world :as world]
+            [demo.util :refer [bound rank-by wrand]]))
 
 (defstruct ant :dir) ; May also have :food
 
@@ -30,26 +31,6 @@
         (do
           (world/set-home [x y])
           (world/add-ant (build-ant) [x y]))))))
-
-(defn bound
-  "returns n wrapped into range 0-b"
-  [b n]
-  (let [n (rem n b)]
-    (if (neg? n)
-      (+ n b)
-      n)))
-
-(defn wrand
-  "given a vector of slice sizes, returns the index of a slice given a
-  random spin of a roulette wheel with compartments proportional to
-  slices."
-  [slices]
-  (let [total (reduce + slices)
-        r (rand total)]
-    (loop [i 0 sum 0]
-      (if (< r (+ (slices i) sum))
-        i
-        (recur (inc i) (+ (slices i) sum))))))
 
 ;dirs are 0-7, starting at north and going clockwise
 ;these are the deltas in order to move one step in given dir
@@ -91,13 +72,6 @@
   (dosync
     (alter (world/place location) update-in [:ant :dir] next-direction amount))
   location)
-
-(defn rank-by
-  "returns a map of xs to their 1-based rank when sorted by keyfn"
-  [keyfn xs]
-  (let [sorted (sort-by (comp float keyfn) xs)]
-    (reduce (fn [ret i] (assoc ret (nth sorted i) (inc i)))
-            {} (range (count sorted)))))
 
 (defn drop-food
   "Drops food at current location. Must be called in a transaction that has

@@ -1,7 +1,8 @@
 (ns demo.applet
   (:require [demo.config :refer [config]]
             [demo.ant :as ant]
-            [demo.world :as world])
+            [demo.world :as world]
+            [demo.util :refer [scaled-color]])
   (:import (javax.swing JApplet JPanel JFrame)
            (java.awt Color Graphics Dimension)
            (java.awt.image BufferedImage))
@@ -40,9 +41,6 @@
   (if (ant/food? ant)
     (Color/red)
     (Color/black)))
-
-(defn scaled-color [value max-value]
-  (int (min 255 (* 255 (/ value max-value)))))
 
 (defn food-color [food]
   (new Color 255 0 0 (scaled-color food (config :food-scale))))
