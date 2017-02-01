@@ -1,11 +1,24 @@
 (ns demo.world
-  (:require [demo.config :refer [config]]))
+  (:require [demo.config :refer [config]]
+            [demo.util :refer [bound]]))
 
 (defstruct ^:private cell
   :food :pher) ; May also have :ant and :home
 
 (defn ^:private ref-to-cell [_]
   (ref (struct cell 0 0)))
+
+;; dirs are 0-7, starting at north and going clockwise these are the deltas in
+;; order to move one step in given dir.
+(def dir-delta
+  {0 [0 -1]
+   1 [1 -1]
+   2 [1 0]
+   3 [1 1]
+   4 [0 1]
+   5 [-1 1]
+   6 [-1 0]
+   7 [-1 -1]})
 
 (def x-range (range (config :dim)))
 (def y-range (range (config :dim)))
@@ -24,7 +37,7 @@
 (defn fetch-all-places []
   (vec (for [x x-range y y-range] @(place [x y]))))
 
-(defn add-ant
+(defn create-ant
   "An ant agent tracks the location of an ant, and controls the behavior of
   the ant at that location. Must be called in a transaction."
   [ant location]
@@ -49,3 +62,12 @@
   (dorun
     (for [x x-range y y-range]
       (alter (place [x y]) update :pher * (config :evaporation-rate)))))
+
+(defn delta-loc
+  "Returns the location one step in the given dir. Note the world is a torus."
+  [[x y] direction]
+  (let [[dx dy] (dir-delta (bound 8 direction))]
+    [(bound (config :dim) (+ x dx)) (bound (config :dim) (+ y dy))]))
+
+(defn close-locations [location direction]
+  (map #(delta-loc location (% direction)) [identity dec inc]))

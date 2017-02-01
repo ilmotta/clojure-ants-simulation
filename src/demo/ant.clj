@@ -20,8 +20,11 @@
 (defn build-ant []
   (struct ant (rand-int 8)))
 
+(defn next-direction [amount direction]
+  (bound 8 (+ direction amount)))
+
 (defn setup
-  "Places initial food and ants, returns seq of ant agents"
+  "Places initial food and ants, returns seq of ant agents."
   []
   (dosync
     (dotimes [i (config :food-places)]
@@ -30,47 +33,25 @@
       (for [x home-range y home-range]
         (do
           (world/set-home [x y])
-          (world/add-ant (build-ant) [x y]))))))
-
-;dirs are 0-7, starting at north and going clockwise
-;these are the deltas in order to move one step in given dir
-(def dir-delta
-  {0 [0 -1]
-   1 [1 -1]
-   2 [1 0]
-   3 [1 1]
-   4 [0 1]
-   5 [-1 1]
-   6 [-1 0]
-   7 [-1 -1]})
-
-(defn delta-loc
-  "returns the location one step in the given dir. Note the world is a torus"
-  [[x y] dir]
-  (let [[dx dy] (dir-delta (bound 8 dir))]
-    [(bound (config :dim) (+ x dx)) (bound (config :dim) (+ y dy))]))
+          (world/create-ant (build-ant) [x y]))))))
 
 (defn move
   "Moves the ant in the direction it is heading. Must be called in a
-  transaction that has verified the way is clear"
+  transaction that has verified the way is clear."
   [location]
   (let [place (world/place location)
         ant (:ant @place)
-        next-location (delta-loc location (:dir ant))
+        next-location (world/delta-loc location (:dir ant))
         next-place (world/place next-location)]
     (alter place dissoc :ant)
     (when-not (:home @place) (alter place update :pher inc))
     (alter next-place assoc :ant ant)
     next-location))
 
-(defn next-direction [amount direction]
-  (bound 8 (+ direction amount)))
-
 (defn turn
   "Turns the ant at the location by the given amount"
   [location amount]
-  (dosync
-    (alter (world/place location) update-in [:ant :dir] next-direction amount))
+  (alter (world/place location) update-in [:ant :dir] next-direction amount)
   location)
 
 (defn drop-food
@@ -91,14 +72,15 @@
     (alter assoc-in [:ant :food] true))
   location)
 
+(defn close-places [location direction]
+  (map world/place (world/close-locations location direction)))
+
 (defn behave-loop
   "the main function for the ant agent"
-  [loc]
-  (let [p (world/place loc)
+  [location]
+  (let [p (world/place location)
         ant (:ant @p)
-        ahead (world/place (delta-loc loc (:dir ant)))
-        ahead-left (world/place (delta-loc loc (dec (:dir ant))))
-        ahead-right (world/place (delta-loc loc (inc (:dir ant))))
+        [ahead ahead-left ahead-right] (close-places location (:dir ant))
         places [ahead ahead-left ahead-right]]
     (. Thread (sleep (config :ant-sleep-ms)))
     (dosync
@@ -107,9 +89,9 @@
         ;going home
         (cond
           (:home @p)
-          (-> loc drop-food (turn 4))
+          (-> location drop-food (turn 4))
           (and (:home @ahead) (not (:ant @ahead)))
-          (move loc)
+          (move location)
           :else
           (let [ranks (merge-with +
                                   (rank-by (comp #(if (:home %) 1 0) deref) places)
@@ -117,13 +99,13 @@
             (([move #(turn % -1) #(turn % 1)]
               (wrand [(if (:ant @ahead) 0 (ranks ahead))
                       (ranks ahead-left) (ranks ahead-right)]))
-             loc)))
+             location)))
         ;foraging
         (cond
           (and (pos? (:food @p)) (not (:home @p)))
-          (-> loc take-food (turn 4))
+          (-> location take-food (turn 4))
           (and (pos? (:food @ahead)) (not (:home @ahead)) (not (:ant @ahead)))
-          (move loc)
+          (move location)
           :else
           (let [ranks (merge-with +
                                   (rank-by (comp :food deref) places)
@@ -131,4 +113,4 @@
             (([move #(turn % -1) #(turn % 1)]
               (wrand [(if (:ant @ahead) 0 (ranks ahead))
                       (ranks ahead-left) (ranks ahead-right)]))
-             loc)))))))
+             location)))))))
