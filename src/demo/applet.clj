@@ -102,7 +102,7 @@
 
 (defn evaporation-loop [_]
   (send-off *agent* evaporation-loop)
-  (ant/evaporate)
+  (world/evaporate)
   (Thread/sleep (config :evaporation-sleep-ms))
   nil)
 

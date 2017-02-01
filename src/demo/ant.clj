@@ -92,15 +92,6 @@
     (alter (world/place location) update-in [:ant :dir] next-direction amount))
   location)
 
-(defn evaporate
-  "causes all the pheromones to evaporate a bit"
-  []
-  (dorun
-   (for [x (range (config :dim)) y (range (config :dim))]
-     (dosync
-      (let [p (world/place [x y])]
-        (alter p assoc :pher (* (config :evaporation-rate) (:pher @p))))))))
-
 (defn rank-by
   "returns a map of xs to their 1-based rank when sorted by keyfn"
   [keyfn xs]

@@ -43,3 +43,10 @@
 
 (defn set-food [location amount]
   (alter (place location) assoc :food amount))
+
+(defn evaporate
+  "Causes all the pheromones to evaporate a bit."
+  []
+  (dorun
+    (for [x x-range y y-range]
+      (dosync (alter (place [x y]) update :pher * (config :evaporation-rate))))))
