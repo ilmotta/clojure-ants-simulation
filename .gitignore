@@ -10,3 +10,4 @@
 **/.lein-plugins/
 **/.lein-failures
 **/.nrepl-port
+.DS_Store
