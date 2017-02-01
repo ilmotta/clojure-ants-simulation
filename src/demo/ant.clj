@@ -99,25 +99,23 @@
     (reduce (fn [ret i] (assoc ret (nth sorted i) (inc i)))
             {} (range (count sorted)))))
 
-(defn drop-food [loc]
-  "Drops food at current location. Must be called in a
-  transaction that has verified the ant has food"
-  (let [p (world/place loc)
-        ant (:ant @p)]
-    (alter p assoc
-           :food (inc (:food @p))
-           :ant (dissoc ant :food))
-    loc))
+(defn drop-food
+  "Drops food at current location. Must be called in a transaction that has
+  verified the ant has food."
+  [location]
+  (doto (world/place location)
+    (alter update :food inc)
+    (alter update :ant dissoc :food))
+  location)
 
-(defn take-food [loc]
-  "Takes one food from current location. Must be called in a
-  transaction that has verified there is food available"
-  (let [p (world/place loc)
-        ant (:ant @p)]
-    (alter p assoc
-           :food (dec (:food @p))
-           :ant (assoc ant :food true))
-    loc))
+(defn take-food
+  "Takes one food from current location. Must be called in a transaction that
+  has verified there is food available."
+  [location]
+  (doto (world/place location)
+    (alter update :food dec)
+    (alter assoc-in [:ant :food] true))
+  location)
 
 (defn behave-loop
   "the main function for the ant agent"
