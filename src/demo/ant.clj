@@ -35,42 +35,22 @@
           (world/set-home [x y])
           (world/create-ant (build-ant) [x y]))))))
 
+(defn drop-pheromone [place]
+  (update place :pher #(if (:home place) % (inc %))))
+
 (defn move
-  "Moves the ant in the direction it is heading. Must be called in a
-  transaction that has verified the way is clear."
-  [location]
-  (let [place (world/place location)
-        ant (:ant @place)
-        next-location (world/delta-loc location (:dir ant))
-        next-place (world/place next-location)]
-    (alter place dissoc :ant)
-    (when-not (:home @place) (alter place update :pher inc))
-    (alter next-place assoc :ant ant)
-    next-location))
+  [from-place to-place]
+  [(-> from-place (dissoc :ant) drop-pheromone)
+   (assoc to-place :ant (:ant from-place))])
 
-(defn turn
-  "Turns the ant at the location by the given amount"
-  [location amount]
-  (alter (world/place location) update-in [:ant :dir] next-direction amount)
-  location)
+(defn turn [place amount]
+  (update-in place [:ant :dir] next-direction amount))
 
-(defn drop-food
-  "Drops food at current location. Must be called in a transaction that has
-  verified the ant has food."
-  [location]
-  (doto (world/place location)
-    (alter update :food inc)
-    (alter update :ant dissoc :food))
-  location)
+(defn take-food [place]
+  (-> place (update :food dec) (assoc-in [:ant :food] true)))
 
-(defn take-food
-  "Takes one food from current location. Must be called in a transaction that
-  has verified there is food available."
-  [location]
-  (doto (world/place location)
-    (alter update :food dec)
-    (alter assoc-in [:ant :food] true))
-  location)
+(defn drop-food [place]
+  (-> place (update :food inc) (update :ant dissoc :food)))
 
 (defn close-places [location direction]
   (map world/place (world/close-locations location direction)))
@@ -80,6 +60,7 @@
   [location]
   (let [p (world/place location)
         ant (:ant @p)
+        next-location (world/delta-loc location (:dir ant))
         [ahead ahead-left ahead-right] (close-places location (:dir ant))
         places [ahead ahead-left ahead-right]]
     (. Thread (sleep (config :ant-sleep-ms)))
@@ -89,28 +70,26 @@
         ;going home
         (cond
           (:home @p)
-          (-> location drop-food (turn 4))
+          (-> @p drop-food (turn 4) world/update-place :location)
           (and (:home @ahead) (not (:ant @ahead)))
-          (move location)
+          (-> @p (move @ahead) world/update-place :location)
           :else
-          (let [ranks (merge-with +
-                                  (rank-by (comp #(if (:home %) 1 0) deref) places)
-                                  (rank-by (comp :pher deref) places))]
-            (([move #(turn % -1) #(turn % 1)]
-              (wrand [(if (:ant @ahead) 0 (ranks ahead))
-                      (ranks ahead-left) (ranks ahead-right)]))
-             location)))
+          (let [ranks (merge-with + (rank-by (comp #(if (:home %) 1 0) deref) places) (rank-by (comp :pher deref) places))
+                index (wrand [(if (:ant @ahead) 0 (ranks ahead)) (ranks ahead-left) (ranks ahead-right)])
+                actions [#(move % @ahead) #(turn % -1) #(turn % 1)]]
+            (-> @p ((actions index)) world/update-place :location)))
         ;foraging
         (cond
           (and (pos? (:food @p)) (not (:home @p)))
-          (-> location take-food (turn 4))
+          (do
+            (-> @p take-food (turn 4) world/update-place)
+            (:location @p))
           (and (pos? (:food @ahead)) (not (:home @ahead)) (not (:ant @ahead)))
-          (move location)
+          (do
+            (world/update-place (move @p @ahead))
+            (:location @ahead))
           :else
-          (let [ranks (merge-with +
-                                  (rank-by (comp :food deref) places)
-                                  (rank-by (comp :pher deref) places))]
-            (([move #(turn % -1) #(turn % 1)]
-              (wrand [(if (:ant @ahead) 0 (ranks ahead))
-                      (ranks ahead-left) (ranks ahead-right)]))
-             location)))))))
+          (let [ranks (merge-with + (rank-by (comp :food deref) places) (rank-by (comp :pher deref) places))
+                index (wrand [(if (:ant @ahead) 0 (ranks ahead)) (ranks ahead-left) (ranks ahead-right)])
+                actions [#(move % @ahead) #(turn % -1) #(turn % 1)]]
+            (-> @p ((actions index)) world/update-place :location)))))))

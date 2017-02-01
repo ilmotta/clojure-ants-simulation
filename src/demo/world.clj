@@ -3,10 +3,10 @@
             [demo.util :refer [bound]]))
 
 (defstruct ^:private cell
-  :food :pher) ; May also have :ant and :home
+  :food :pher :location) ; May also have :ant and :home
 
-(defn ^:private ref-to-cell [_]
-  (ref (struct cell 0 0)))
+(defn ^:private ref-to-cell [x y]
+  (ref (struct cell 0 0 [x y])))
 
 ;; dirs are 0-7, starting at north and going clockwise these are the deltas in
 ;; order to move one step in given dir.
@@ -29,7 +29,7 @@
 
 ; World is a 2d vector of refs to cells
 (def ^:private world
-  (mapv (fn [_] (mapv ref-to-cell y-range)) x-range))
+  (mapv (fn [x] (mapv (partial ref-to-cell x) y-range)) x-range))
 
 (defn place [[x y]]
   (-> world (nth x) (nth y)))
@@ -71,3 +71,9 @@
 
 (defn close-locations [location direction]
   (map #(delta-loc location (% direction)) [identity dec inc]))
+
+(defn update-place [deref-places]
+  (last
+    (doall
+      (for [p (flatten [deref-places])]
+        (ref-set (place (:location p)) p)))))
