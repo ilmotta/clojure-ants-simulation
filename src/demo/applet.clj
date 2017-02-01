@@ -94,6 +94,9 @@
   (doto (proxy [JPanel] [] (paint [g] (render g)))
     (.setPreferredSize (new Dimension x-scale y-scale))))
 
+(def animator (agent nil))
+(def evaporator (agent nil))
+
 (defn animation-loop [_]
   (send-off *agent* animation-loop)
   (.repaint panel)
@@ -108,6 +111,6 @@
 
 (defn -post-init [this]
   (doto this (.setContentPane panel) (.setVisible true))
-  (send-off (agent nil) animation-loop)
-  (send-off (agent nil) evaporation-loop)
+  (send-off animator animation-loop)
+  (send-off evaporator evaporation-loop)
   (dorun (for [ant (ant/setup)] (send-off ant ant/behave-loop))))
