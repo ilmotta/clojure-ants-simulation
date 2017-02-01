@@ -22,8 +22,7 @@
   (-> world (nth x) (nth y)))
 
 (defn fetch-all-places []
-  (dosync
-    (vec (for [x x-range y y-range] @(place [x y])))))
+  (vec (for [x x-range y y-range] @(place [x y]))))
 
 (defn add-ant
   "An ant agent tracks the location of an ant, and controls the behavior of
@@ -49,4 +48,4 @@
   []
   (dorun
     (for [x x-range y y-range]
-      (dosync (alter (place [x y]) update :pher * (config :evaporation-rate))))))
+      (alter (place [x y]) update :pher * (config :evaporation-rate)))))

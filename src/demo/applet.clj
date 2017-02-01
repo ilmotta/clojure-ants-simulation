@@ -64,7 +64,7 @@
   (when (world/ant? place) (render-ant ant graphics x y)))
 
 (defn render-all-places [img]
-  (let [places (world/fetch-all-places)
+  (let [places (dosync (world/fetch-all-places))
         graphics (.getGraphics img)]
     (dorun
       (for [x world/x-range
@@ -105,7 +105,7 @@
 
 (defn evaporation-loop [_]
   (send-off *agent* evaporation-loop)
-  (world/evaporate)
+  (dosync (world/evaporate))
   (Thread/sleep (config :evaporation-sleep-ms))
   nil)
 
