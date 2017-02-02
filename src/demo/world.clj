@@ -55,7 +55,9 @@
        (map (comp deref cell))))
 
 (defn update-place [places]
-  (cell (:location (last (doall (map #(ref-set (cell (:location %)) %) (flatten [places])))))))
+  (->> (flatten [places])
+       (map #(ref-set (cell (:location %)) %))
+       ((comp cell :location last))))
 
 (defn evaporate []
   (map #(alter % update :pher * (config :evaporation-rate)) (cell)))
