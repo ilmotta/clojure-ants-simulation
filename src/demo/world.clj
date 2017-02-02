@@ -17,9 +17,6 @@
    6 [-1 0]
    7 [-1 -1]})
 
-(defn ^:private ref-to-cell [x y]
-  (ref (struct cell 0 0 [x y])))
-
 (defn ^:private delta-loc
   "Returns the location one step in the given dir. Note the world is a torus."
   [[x y] direction]
@@ -36,9 +33,9 @@
 (def food? (comp pos? :food))
 (def pheromone? (comp pos? :pher))
 
-; World is a 2d vector of refs to cells
+;; World is a 2D vector of refs to cells.
 (def ^:private world
-  (mapv (fn [x] (mapv (partial ref-to-cell x) y-range)) x-range))
+  (mapv (fn [x] (mapv #(ref (struct cell 0 0 [x %])) y-range)) x-range))
 
 (defn place [[x y]]
   (-> world (nth x) (nth y)))
