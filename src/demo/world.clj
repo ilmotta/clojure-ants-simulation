@@ -2,7 +2,7 @@
   (:require [demo.config :refer [config]]
             [demo.util :refer [bound]]))
 
-(defstruct ^:private cell
+(defstruct ^:private Cell
   :food :pher :location) ; May also have :ant and :home
 
 ;; dirs are 0-7, starting at north and going clockwise these are the deltas in
@@ -35,9 +35,9 @@
 
 ;; World is a 2D vector of refs to cells.
 (def ^:private world
-  (mapv (fn [x] (mapv #(ref (struct cell 0 0 [x %])) y-range)) x-range))
+  (mapv (fn [x] (mapv #(ref (struct Cell 0 0 [x %])) y-range)) x-range))
 
-(defn place [[x y]]
+(defn cell [[x y]]
   (-> world (nth x) (nth y)))
 
 (defn evaporate
@@ -45,24 +45,24 @@
   []
   (dorun
     (for [x x-range y y-range]
-      (alter (place [x y]) update :pher * (config :evaporation-rate)))))
+      (alter (cell [x y]) update :pher * (config :evaporation-rate)))))
 
 (defn ^:private rand-place [_]
-  @(place ((juxt rand-int rand-int) (config :dim))))
+  @(cell ((juxt rand-int rand-int) (config :dim))))
 
 (defn fetch-all-places []
-  (vec (for [x x-range y y-range] @(place [x y]))))
+  (vec (for [x x-range y y-range] @(cell [x y]))))
 
 (defn home-places []
   (doall
     (for [x (config :home-range) y (config :home-range)]
-      @(place [x y]))))
+      @(cell [x y]))))
 
 (defn rand-food-places []
   (map rand-place (range (config :food-places))))
 
-(defn update-place [deref-places]
-  (place (:location (last (doall (map #(ref-set (place (:location %)) %) (flatten [deref-places])))))))
+(defn update-place [places]
+  (cell (:location (last (doall (map #(ref-set (cell (:location %)) %) (flatten [places])))))))
 
-(defn close-places [location direction]
-  (map place (close-locations location direction)))
+(defn close-cells [location direction]
+  (map cell (close-locations location direction)))

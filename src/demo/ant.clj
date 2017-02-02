@@ -28,38 +28,38 @@
 (defn food? [ant]
   (boolean (:food ant)))
 
-(defn build-ant [deref-place]
-  (struct ant (rand-int 8) (agent (world/place (:location deref-place)))))
+(defn build-ant [place]
+  (struct ant (rand-int 8) (agent (world/cell (:location place)))))
 
 (defn behave-loop
   "the main function for the ant agent"
-  [place]
-  (let [ant (:ant @place)
-        [ahead ahead-left ahead-right] (world/close-places (:location @place) (:dir ant))
-        places [ahead ahead-left ahead-right]]
+  [cell]
+  (let [ant (:ant @cell)
+        [ahead ahead-left ahead-right] (world/close-cells (:location @cell) (:dir ant))
+        cells [ahead ahead-left ahead-right]]
     (. Thread (sleep (config :ant-sleep-ms)))
     (dosync
       (send-off *agent* behave-loop)
       (if (:food ant)
         ;going home
         (cond
-          (:home @place)
-          (-> @place drop-food (turn 4) world/update-place)
+          (:home @cell)
+          (-> @cell drop-food (turn 4) world/update-place)
           (and (:home @ahead) (not (:ant @ahead)))
-          (-> @place (move @ahead) world/update-place)
+          (-> @cell (move @ahead) world/update-place)
           :else
-          (let [ranks (merge-with + (rank-by (comp #(if (:home %) 1 0) deref) places) (rank-by (comp :pher deref) places))
+          (let [ranks (merge-with + (rank-by (comp #(if (:home %) 1 0) deref) cells) (rank-by (comp :pher deref) cells))
                 index (wrand [(if (:ant @ahead) 0 (ranks ahead)) (ranks ahead-left) (ranks ahead-right)])
                 actions [#(move % @ahead) #(turn % -1) #(turn % 1)]]
-            (-> @place ((actions index)) world/update-place)))
+            (-> @cell ((actions index)) world/update-place)))
         ;foraging
         (cond
-          (and (pos? (:food @place)) (not (:home @place)))
-          (-> @place take-food (turn 4) world/update-place)
+          (and (pos? (:food @cell)) (not (:home @cell)))
+          (-> @cell take-food (turn 4) world/update-place)
           (and (pos? (:food @ahead)) (not (:home @ahead)) (not (:ant @ahead)))
-          (world/update-place (move @place @ahead))
+          (world/update-place (move @cell @ahead))
           :else
-          (let [ranks (merge-with + (rank-by (comp :food deref) places) (rank-by (comp :pher deref) places))
+          (let [ranks (merge-with + (rank-by (comp :food deref) cells) (rank-by (comp :pher deref) cells))
                 index (wrand [(if (:ant @ahead) 0 (ranks ahead)) (ranks ahead-left) (ranks ahead-right)])
                 actions [#(move % @ahead) #(turn % -1) #(turn % 1)]]
-            (-> @place ((actions index)) world/update-place)))))))
+            (-> @cell ((actions index)) world/update-place)))))))
