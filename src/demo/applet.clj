@@ -78,7 +78,7 @@
 (defn render-home [img]
   (doto (.getGraphics img)
     (.setColor (Color/blue))
-    (.drawRect (* (config :scale) ant/home-off) (* (config :scale) ant/home-off)
+    (.drawRect (* (config :scale) (config :home-off)) (* (config :scale) (config :home-off))
                (* (config :scale) (config :nants-sqrt)) (* (config :scale) (config :nants-sqrt)))))
 
 (defn render [g]
@@ -91,6 +91,11 @@
 (def panel
   (doto (proxy [JPanel] [] (paint [g] (render g)))
     (.setPreferredSize (new Dimension x-scale y-scale))))
+
+
+;;; =====
+;;; Setup
+;;; =====
 
 (def animator (agent nil))
 (def evaporator (agent nil))
@@ -107,8 +112,35 @@
   (Thread/sleep (config :evaporation-sleep-ms))
   nil)
 
+(def ^:private setup-food
+  (partial map #(assoc % :food (rand-int (config :food-range)))))
+
+(def ^:private setup-home
+  (partial map #(assoc % :home true)))
+
+(def ^:private setup-ants
+  (partial map #(assoc % :ant (ant/build-ant %))))
+
+(defn setup []
+  (dosync
+    (-> (world/home-places) setup-home world/update-place)
+    (-> (world/home-places) setup-ants world/update-place)
+    (-> (world/rand-food-places) setup-food world/update-place)))
+
+(defn start-animation []
+  (send-off animator animation-loop))
+
+(defn start-evaporation []
+  (send-off evaporator evaporation-loop))
+
+(defn start-ants []
+  (dorun
+    (for [ant (->> (world/fetch-all-places) (filter :ant) (map :ant))]
+      (send-off (:agent ant) ant/behave-loop))))
+
 (defn -post-init [this]
   (doto this (.setContentPane panel) (.setVisible true))
-  (send-off animator animation-loop)
-  (send-off evaporator evaporation-loop)
-  (dorun (for [ant (ant/setup)] (send-off ant ant/behave-loop))))
+  (start-animation)
+  (start-evaporation)
+  (setup)
+  (start-ants))
