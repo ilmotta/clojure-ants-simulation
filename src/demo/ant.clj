@@ -36,7 +36,7 @@
   (dosync
     (send-off *agent* behave-loop)
     (let [place @cell
-          places (world/close-places (:location place) (get-in place [:ant :dir]))
+          places (world/nearby-places (:location place) (get-in place [:ant :dir]))
           [ahead ahead-left ahead-right] places]
       (if (get-in place [:ant :food])
         (cond

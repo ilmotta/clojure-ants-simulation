@@ -59,7 +59,7 @@
 (defn update-place [places]
   (cell (:location (last (doall (map #(ref-set (cell (:location %)) %) (flatten [places])))))))
 
-(defn close-places [location direction]
+(defn nearby-places [location direction]
   (->> (map #(% direction) [identity dec inc])
        (map (partial delta-loc location))
        (map (comp deref cell))))
