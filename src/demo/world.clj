@@ -23,9 +23,6 @@
   (let [[dx dy] (dir-delta (bound 8 direction))]
     [(bound (config :dim) (+ x dx)) (bound (config :dim) (+ y dy))]))
 
-(defn ^:private close-locations [location direction]
-  (map #(delta-loc location (% direction)) [identity dec inc]))
-
 (def x-range (range (config :dim)))
 (def y-range (range (config :dim)))
 
@@ -37,21 +34,19 @@
 (def ^:private world
   (mapv (fn [x] (mapv #(ref (struct Cell 0 0 [x %])) y-range)) x-range))
 
-(defn cell [[x y]]
-  (-> world (nth x) (nth y)))
+(defn cell
+  ([] (vec (for [x x-range y y-range] (cell [x y]))))
+  ([[x y]] (-> world (nth x) (nth y))))
 
-(defn evaporate
-  "Causes all the pheromones to evaporate a bit."
-  []
-  (dorun
-    (for [x x-range y y-range]
-      (alter (cell [x y]) update :pher * (config :evaporation-rate)))))
+(defn place
+  ([] (mapv deref (cell)))
+  ([cell] @cell))
 
 (defn ^:private rand-place [_]
   @(cell ((juxt rand-int rand-int) (config :dim))))
 
-(defn fetch-all-places []
-  (vec (for [x x-range y y-range] @(cell [x y]))))
+(defn evaporate []
+  (map #(alter % update :pher * (config :evaporation-rate)) (cell)))
 
 (defn home-places []
   (doall
@@ -64,5 +59,7 @@
 (defn update-place [places]
   (cell (:location (last (doall (map #(ref-set (cell (:location %)) %) (flatten [places])))))))
 
-(defn close-cells [location direction]
-  (map cell (close-locations location direction)))
+(defn close-places [location direction]
+  (->> (map #(% direction) [identity dec inc])
+       (map (partial delta-loc location))
+       (map (comp deref cell))))

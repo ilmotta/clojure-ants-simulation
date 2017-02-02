@@ -62,7 +62,7 @@
   (when (world/ant? place) (render-ant ant graphics x y)))
 
 (defn render-all-places [img]
-  (let [places (dosync (world/fetch-all-places))
+  (let [places (dosync (world/place))
         graphics (.getGraphics img)]
     (dorun
       (for [x world/x-range
@@ -135,7 +135,7 @@
 
 (defn start-ants []
   (dorun
-    (for [ant (->> (world/fetch-all-places) (filter :ant) (map :ant))]
+    (for [ant (->> (dosync (world/place)) (filter :ant) (map :ant))]
       (send-off (:agent ant) ant/behave-loop))))
 
 (defn -post-init [this]
