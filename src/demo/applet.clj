@@ -1,8 +1,9 @@
 (ns demo.applet
-  (:require [demo.config :refer [config]]
-            [demo.ant :as ant]
-            [demo.world :as world]
-            [demo.util :refer [scaled-color]])
+  (:require [demo.ant :as ant]
+            [demo.config :refer [config]]
+            [demo.store :as store]
+            [demo.util :refer [scaled-color]]
+            [demo.world :as world])
   (:import (javax.swing JApplet JPanel JFrame)
            (java.awt Color Graphics Dimension)
            (java.awt.image BufferedImage))
@@ -62,11 +63,11 @@
   (when (world/ant? place) (render-ant ant graphics x y)))
 
 (defn render-all-places [img]
-  (let [places (dosync (world/place))
+  (let [places (dosync (store/place))
         graphics (.getGraphics img)]
     (dorun
-      (for [x world/x-range
-            y world/y-range]
+      (for [x (config :x-range)
+            y (config :y-range)]
         (let [place (places (+ (* x (config :dim)) y))]
           (render-place graphics place x y))))))
 
@@ -108,7 +109,7 @@
 
 (defn evaporation-loop [_]
   (send-off *agent* evaporation-loop)
-  (dosync (world/evaporate))
+  (dosync (-> (store/place) world/evaporate store/update-place))
   (Thread/sleep (config :evaporation-sleep-ms))
   nil)
 
@@ -119,13 +120,13 @@
   (partial map #(assoc % :home true)))
 
 (def ^:private setup-ants
-  (partial map #(assoc % :ant (ant/build-ant %))))
+  (partial map #(assoc % :ant (ant/build %))))
 
 (defn setup []
   (dosync
-    (-> (world/home-places) setup-home world/update-place)
-    (-> (world/home-places) setup-ants world/update-place)
-    (-> (world/rand-food-places) setup-food world/update-place)))
+    (-> (world/home-places) setup-home store/update-place)
+    (-> (world/home-places) setup-ants store/update-place)
+    (-> (world/rand-food-places) setup-food store/update-place)))
 
 (defn start-animation []
   (send-off animator animation-loop))
@@ -135,8 +136,8 @@
 
 (defn start-ants []
   (dorun
-    (for [ant (->> (dosync (world/place)) (filter :ant) (map :ant))]
-      (send-off (:agent ant) ant/behave-loop))))
+    (for [place (->> (dosync (store/place)) (filter :ant))]
+      (send-off (get-in place [:ant :agent]) ant/behave-loop))))
 
 (defn -post-init [this]
   (doto this (.setContentPane panel) (.setVisible true))

@@ -4,6 +4,8 @@
 (def ^:private nants-sqrt 7)
 (def ^:private home-off (/ dim 4))
 (def ^:private home-range (range home-off (+ nants-sqrt home-off)))
+(def ^:private x-range (range dim))
+(def ^:private y-range (range dim))
 
 (def config
   {:animation-sleep-ms 100
@@ -19,4 +21,6 @@
    :nants-sqrt nants-sqrt ; Number of ants = nants-sqrt^2
    :pher-scale 20.0 ; Scale factor for pheromone drawing
    :scale 5 ; Pixels per world cell
+   :x-range x-range
+   :y-range y-range
    })

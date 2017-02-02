@@ -1,16 +1,7 @@
 (ns demo.world
   (:require [demo.config :refer [config]]
+            [demo.store :as store]
             [demo.util :refer [bound]]))
-
-(def x-range (range (config :dim)))
-(def y-range (range (config :dim)))
-
-(defstruct ^:private Cell
-  :food :pher :location) ; May also have :ant and :home
-
-;; World is a 2D vector of refs to cells.
-(def ^:private world
-  (mapv (fn [x] (mapv #(ref (struct Cell 0 0 [x %])) y-range)) x-range))
 
 ;; dirs are 0-7, starting at north and going clockwise these are the deltas in
 ;; order to move one step in given dir.
@@ -24,43 +15,42 @@
    6 [-1 0]
    7 [-1 -1]})
 
+(def ^:private home-locations
+  (doall (for [x (config :home-range)
+               y (config :home-range)]
+           [x y])))
+
 (defn ^:private delta-loc
   "Returns the location one step in the given dir. Note the world is a torus."
   [[x y] direction]
   (let [[dx dy] (dir-delta (bound 8 direction))]
     [(bound (config :dim) (+ x dx)) (bound (config :dim) (+ y dy))]))
 
-(defn cell
-  ([] (vec (for [x x-range y y-range] (cell [x y]))))
-  ([[x y]] (-> world (nth x) (nth y))))
-
-(defn place
-  ([] (mapv deref (cell)))
-  ([cell] @cell))
+(defn ^:private rand-location []
+  ((juxt rand-int rand-int) (config :dim)))
 
 (defn ^:private rand-place [_]
-  @(cell ((juxt rand-int rand-int) (config :dim))))
+  (store/place (rand-location)))
 
 (defn rand-food-places []
   (map rand-place (range (config :food-places))))
 
 (defn home-places []
-  (doall
-    (for [x (config :home-range) y (config :home-range)]
-      @(cell [x y]))))
+  (map store/place home-locations))
 
 (defn nearby-places [location direction]
   (->> (map #(% direction) [identity dec inc])
        (map (partial delta-loc location))
-       (map (comp deref cell))))
+       (map store/place)))
 
-(defn update-place [places]
-  (->> (flatten [places])
-       (map #(ref-set (cell (:location %)) %))
-       ((comp cell :location last))))
+(defn has-food-and-not-home? [place]
+  (and (pos? (:food place)) (not (:home place))))
 
-(defn evaporate []
-  (map #(alter % update :pher * (config :evaporation-rate)) (cell)))
+(defn home-and-available? [place]
+  (and (:home place) (not (:ant place))))
+
+(defn evaporate [places]
+  (map #(update % :pher * (config :evaporation-rate)) places))
 
 (def ant? :ant)
 (def food? (comp pos? :food))
