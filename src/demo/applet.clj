@@ -1,6 +1,8 @@
 (ns demo.applet
   (:require [demo.ant :as ant]
-            [demo.config :refer [config]]
+            [demo.config :refer [ant-sleep-ms evaporation-sleep-ms
+                                 animation-sleep-ms nants-sqrt home-off
+                                 x-range y-range pher-scale scale dim food-scale]]
             [demo.store :as store]
             [demo.util :refer [scaled-color]]
             [demo.world :as world])
@@ -19,8 +21,8 @@
 ;   the terms of this license.
 ;   You must not remove this notice, or any other, from this software.
 
-(def x-scale (* (config :scale) (config :dim)))
-(def y-scale (* (config :scale) (config :dim)))
+(def x-scale (* scale dim))
+(def y-scale (* scale dim))
 
 (def directions
   {0 [2 0 2 4], 1 [4 0 0 4], 2 [4 2 0 2]
@@ -30,22 +32,21 @@
 (defn fill-cell [#^Graphics graphics x y color]
   (doto graphics
     (.setColor color)
-    (.fillRect (* x (config :scale)) (* y (config :scale))
-               (config :scale) (config :scale))))
+    (.fillRect (* x scale) (* y scale) scale scale)))
 
 (defn ant-color [ant]
   (if (ant/food? ant) (Color/red) (Color/black)))
 
 (defn food-color [food]
-  (new Color 255 0 0 (scaled-color food (config :food-scale))))
+  (new Color 255 0 0 (scaled-color food food-scale)))
 
 (defn pheromone-color [pheromone]
-  (new Color 0 255 0 (scaled-color pheromone (config :pher-scale))))
+  (new Color 0 255 0 (scaled-color pheromone pher-scale)))
 
 (defn render-ant [ant #^Graphics graphics x y]
   (let [[hx hy tx ty] (directions (:dir ant))
-        x-scale (* x (config :scale))
-        y-scale (* y (config :scale))]
+        x-scale (* x scale)
+        y-scale (* y scale)]
     (doto graphics
       (.setColor (ant-color ant))
       (.drawLine (+ hx x-scale) (+ hy y-scale) (+ tx x-scale) (+ ty y-scale)))))
@@ -54,8 +55,8 @@
   (let [places (dosync (store/place))
         graphics (.getGraphics img)]
     (dorun
-      (for [x (config :x-range) y (config :y-range)]
-        (let [{:keys [pher food ant] :as place} (places (+ (* x (config :dim)) y))]
+      (for [x x-range y y-range]
+        (let [{:keys [pher food ant] :as place} (places (+ (* x dim) y))]
           (when (world/pheromone? place) (fill-cell graphics x y (pheromone-color pher)))
           (when (world/food? place) (fill-cell graphics x y (food-color food)))
           (when (world/ant? place) (render-ant ant graphics x y)))))))
@@ -68,8 +69,8 @@
 (defn render-home [img]
   (doto (.getGraphics img)
     (.setColor (Color/blue))
-    (.drawRect (* (config :scale) (config :home-off)) (* (config :scale) (config :home-off))
-               (* (config :scale) (config :nants-sqrt)) (* (config :scale) (config :nants-sqrt)))))
+    (.drawRect (* scale home-off) (* scale home-off)
+               (* scale nants-sqrt) (* scale nants-sqrt))))
 
 (defn render [g]
   (let [img (BufferedImage. x-scale y-scale (BufferedImage/TYPE_INT_ARGB))
@@ -88,17 +89,17 @@
 (defn animation-loop [_]
   (send-off *agent* animation-loop)
   (.repaint panel)
-  (Thread/sleep (config :animation-sleep-ms))
+  (Thread/sleep animation-sleep-ms)
   nil)
 
 (defn evaporation-loop [_]
   (send-off *agent* evaporation-loop)
   (dosync (-> (store/place) (map world/evaporate) store/update-place))
-  (Thread/sleep (config :evaporation-sleep-ms))
+  (Thread/sleep evaporation-sleep-ms)
   nil)
 
 (defn ant-loop [location]
-  (Thread/sleep (config :ant-sleep-ms))
+  (Thread/sleep ant-sleep-ms)
   (dosync
     (send-off *agent* ant-loop)
     (-> location store/place ant/behave store/update-place :location)))

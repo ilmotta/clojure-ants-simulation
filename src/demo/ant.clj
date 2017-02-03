@@ -1,6 +1,5 @@
 (ns demo.ant
-  (:require [demo.config :refer [config]]
-            [demo.util :refer [bound rank-by roulette]]
+  (:require [demo.util :refer [bound rank-by roulette]]
             [demo.world :as world]))
 
 (defn ^:private drop-food [place]

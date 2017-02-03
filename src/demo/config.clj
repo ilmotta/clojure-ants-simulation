@@ -1,26 +1,19 @@
 (ns demo.config)
 
-(def ^:private dim 80)
-(def ^:private nants-sqrt 7)
-(def ^:private home-off (/ dim 4))
-(def ^:private home-range (range home-off (+ nants-sqrt home-off)))
-(def ^:private x-range (range dim))
-(def ^:private y-range (range dim))
+(def animation-sleep-ms 100)
+(def ant-sleep-ms 40)
+(def dim 80) ; World dimensions
+(def evaporation-rate 0.99)
+(def evaporation-sleep-ms 1000)
+(def food-places 35) ; Number of places with food
+(def food-range 100) ; Max amount of food
+(def food-scale 30.0) ; Scale factor for food drawing
+(def food-scale 30.0) ; Scale factor for food drawing
+(def nants-sqrt 7) ; Number of ants = nants-sqrt^2
+(def pher-scale 20.0) ; Scale factor for pheromone drawing
+(def scale 5) ; Pixels per world cell
 
-(def config
-  {:animation-sleep-ms 100
-   :ant-sleep-ms 40
-   :dim 80 ; Dimensions of swaure world
-   :evaporation-rate 0.99
-   :evaporation-sleep-ms 1000
-   :food-places 35 ; Number of places with food
-   :food-range 100 ; Range of amount of food at a place
-   :food-scale 30.0 ; Scale factor for food drawing
-   :home-off home-off
-   :home-range home-range
-   :nants-sqrt nants-sqrt ; Number of ants = nants-sqrt^2
-   :pher-scale 20.0 ; Scale factor for pheromone drawing
-   :scale 5 ; Pixels per world cell
-   :x-range x-range
-   :y-range y-range
-   })
+(def home-off (/ dim 4))
+(def home-range (range home-off (+ nants-sqrt home-off)))
+(def x-range (range dim))
+(def y-range (range dim))

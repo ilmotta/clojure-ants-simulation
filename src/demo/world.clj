@@ -1,11 +1,11 @@
 (ns demo.world
-  (:require [demo.config :refer [config]]
+  (:require [demo.config :refer [food-range home-range dim food-places evaporation-rate]]
             [demo.domain :refer [build-ant]]
             [demo.store :as store]
             [demo.util :refer [bound]]))
 
 (def ^:private setup-food
-  (partial map #(assoc % :food (rand-int (config :food-range)))))
+  (partial map #(assoc % :food (rand-int food-range))))
 
 (def ^:private setup-home
   (partial map #(assoc % :home true)))
@@ -17,25 +17,25 @@
   {0 [0 -1], 1 [1 -1], 2 [1 0], 3 [1 1] 4 [0 1], 5 [-1 1], 6 [-1 0], 7 [-1 -1]})
 
 (def ^:private home-locations
-  (doall (for [x (config :home-range) y (config :home-range)] [x y])))
+  (doall (for [x home-range y home-range] [x y])))
 
 (def ^:private bound-location
-  (partial map (partial bound (config :dim))))
+  (partial map (partial bound dim)))
 
 (defn ^:private delta-location [location direction]
   (->> (bound 8 direction) direction-delta (map + location) bound-location))
 
 (defn ^:private rand-location [_]
-  ((juxt rand-int rand-int) (config :dim)))
+  ((juxt rand-int rand-int) dim))
 
 (defn ^:private home-places []
   (map store/place home-locations))
 
 (defn ^:private rand-food-places []
-  (map (comp store/place rand-location) (range (config :food-places))))
+  (map (comp store/place rand-location) (range food-places)))
 
 (defn evaporate [place]
-  (update place :pher * (config :evaporation-rate)))
+  (update place :pher * evaporation-rate))
 
 (defn nearby-places [location direction]
   (->> (map #(% direction) [identity dec inc])
