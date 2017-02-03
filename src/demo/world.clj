@@ -16,9 +16,7 @@
    7 [-1 -1]})
 
 (def ^:private home-locations
-  (doall (for [x (config :home-range)
-               y (config :home-range)]
-           [x y])))
+  (doall (for [x (config :home-range) y (config :home-range)] [x y])))
 
 (defn ^:private delta-loc
   "Returns the location one step in the given dir. Note the world is a torus."
@@ -26,14 +24,11 @@
   (let [[dx dy] (dir-delta (bound 8 direction))]
     [(bound (config :dim) (+ x dx)) (bound (config :dim) (+ y dy))]))
 
-(defn ^:private rand-location []
+(defn ^:private rand-location [_]
   ((juxt rand-int rand-int) (config :dim)))
 
-(defn ^:private rand-place [_]
-  (store/place (rand-location)))
-
 (defn rand-food-places []
-  (map rand-place (range (config :food-places))))
+  (map (comp store/place rand-location) (range (config :food-places))))
 
 (defn home-places []
   (map store/place home-locations))
@@ -43,15 +38,11 @@
        (map (partial delta-loc location))
        (map store/place)))
 
-(defn has-food-and-not-home? [place]
-  (and (pos? (:food place)) (not (:home place))))
+(defn evaporate [place]
+  (update place :pher * (config :evaporation-rate)))
 
-(defn home-and-available? [place]
-  (and (:home place) (not (:ant place))))
-
-(defn evaporate [places]
-  (map #(update % :pher * (config :evaporation-rate)) places))
-
-(def ant? :ant)
+(def ant? (comp boolean :ant))
+(def available? (comp not :ant))
 (def food? (comp pos? :food))
+(def home? (comp boolean :home))
 (def pheromone? (comp pos? :pher))

@@ -1,61 +1,55 @@
 (ns demo.ant
   (:require [demo.config :refer [config]]
-            [demo.store :as store]
-            [demo.util :refer [bound rank-by wrand]]
+            [demo.util :refer [bound rank-by roulette]]
             [demo.world :as world]))
 
 (defstruct ant :dir :agent) ; May also have :food
 
-(def ^:private rank-by-pher (partial rank-by :pher))
-(def ^:private rank-by-home (partial rank-by #(if (:home %) 1 0)))
-(def ^:private rank-by-food (partial rank-by :food))
+(defn ^:private drop-food [place]
+  (-> place (update :food inc) (update :ant dissoc :food)))
 
-(defn ^:private next-direction [amount direction]
-  (bound 8 (+ direction amount)))
-
-(defn ^:private drop-pheromone [place]
-  (update place :pher #(if (:home place) % (inc %))))
+(defn ^:private trail [place]
+  (update place :pher #(if (world/home? place) % (inc %))))
 
 (defn ^:private move [from-place to-place]
-  [(-> from-place (dissoc :ant) drop-pheromone)
+  [(trail (dissoc from-place :ant))
    (assoc to-place :ant (:ant from-place))])
-
-(defn ^:private turn [place amount]
-  (update-in place [:ant :dir] next-direction amount))
 
 (defn ^:private take-food [place]
   (-> place (update :food dec) (assoc-in [:ant :food] true)))
 
-(defn ^:private drop-food [place]
-  (-> place (update :food inc) (update :ant dissoc :food)))
+(defn ^:private turn [place amount]
+  (update-in place [:ant :dir] (comp (partial bound 8) +) amount))
 
-(defn ^:private rand-behavior [[ahead ahead-left ahead-right :as nearby-places] ranks]
-  (let [final-ranks (apply merge-with + ranks)
-        index (wrand [(if (:ant ahead) 0 (final-ranks ahead)) (final-ranks ahead-left) (final-ranks ahead-right)])
-        actions [#(move % ahead) #(turn % -1) #(turn % 1)]]
-    (actions index)))
+(def ^:private rank-by-pher (partial rank-by :pher))
+(def ^:private rank-by-home (partial rank-by #(if (:home %) 1 0)))
+(def ^:private rank-by-food (partial rank-by :food))
+(def ^:private foraging (juxt rank-by-food rank-by-pher))
+(def ^:private homing (juxt rank-by-home rank-by-pher))
+(def ^:private turn-around #(turn % 4))
 
-(defn ^:private behave [place]
-  (let [places (world/nearby-places (:location place) (get-in place [:ant :dir]))
-        [ahead ahead-left ahead-right] places]
+(defn ^:private rand-behavior [behavior place]
+  (let [[ahead ahead-left ahead-right :as nearby] (world/nearby-places (:location place) (get-in place [:ant :dir]))
+        ranks (apply merge-with + (behavior nearby))
+        actions [#(move % ahead) #(turn % -1) #(turn % 1)]
+        index (roulette [(if (:ant ahead) 0 (ranks ahead))
+                         (ranks ahead-left)
+                         (ranks ahead-right)])]
+    ((actions index) place)))
+
+(defn behave [place]
+  (let [[ahead & _] (world/nearby-places (:location place) (get-in place [:ant :dir]))]
     (if (get-in place [:ant :food])
       (cond
-        (:home place) (-> place drop-food (turn 4))
-        (world/home-and-available? ahead) (move place ahead)
-        :else ((rand-behavior places ((juxt rank-by-home rank-by-pher) places)) place))
+        (world/home? place) (-> place drop-food turn-around)
+        (and (world/home? ahead) (world/available? ahead)) (move place ahead)
+        :else (rand-behavior homing place))
       (cond
-        (world/has-food-and-not-home? place) (-> place take-food (turn 4))
-        (world/has-food-and-not-home? ahead) (move place ahead)
-        :else ((rand-behavior places ((juxt rank-by-food rank-by-pher) places)) place)))))
-
-(defn behave-loop [location]
-  (Thread/sleep (config :ant-sleep-ms))
-  (dosync
-    (send-off *agent* behave-loop)
-    (-> location store/place behave store/update-place :location)))
-
-(defn food? [ant]
-  (boolean (:food ant)))
+        (and (world/food? place) (not (world/home? place))) (-> place take-food turn-around)
+        (and (world/food? ahead) (not (world/home? ahead))) (move place ahead)
+        :else (rand-behavior foraging place)))))
 
 (defn build [place]
   (struct ant (rand-int 8) (agent (:location place))))
+
+(def food? (comp boolean :food))

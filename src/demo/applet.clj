@@ -109,7 +109,7 @@
 
 (defn evaporation-loop [_]
   (send-off *agent* evaporation-loop)
-  (dosync (-> (store/place) world/evaporate store/update-place))
+  (dosync (-> (store/place) (map world/evaporate) store/update-place))
   (Thread/sleep (config :evaporation-sleep-ms))
   nil)
 
@@ -134,10 +134,16 @@
 (defn start-evaporation []
   (send-off evaporator evaporation-loop))
 
+(defn behave-loop [location]
+  (Thread/sleep (config :ant-sleep-ms))
+  (dosync
+    (send-off *agent* behave-loop)
+    (-> location store/place ant/behave store/update-place :location)))
+
 (defn start-ants []
   (dorun
     (for [place (->> (dosync (store/place)) (filter :ant))]
-      (send-off (get-in place [:ant :agent]) ant/behave-loop))))
+      (send-off (get-in place [:ant :agent]) behave-loop))))
 
 (defn -post-init [this]
   (doto this (.setContentPane panel) (.setVisible true))

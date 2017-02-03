@@ -15,7 +15,7 @@
       (+ n b)
       n)))
 
-(defn wrand
+(defn roulette
   "Given a vector of slice sizes, returns the index of a slice given a random
   spin of a roulette wheel with compartments proportional to slices."
   [slices]
