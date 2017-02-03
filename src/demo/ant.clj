@@ -3,7 +3,7 @@
             [demo.util :refer [bound rank-by roulette]]
             [demo.world :as world]))
 
-(defstruct ant :dir :agent) ; May also have :food
+(defrecord Ant [dir agent food])
 
 (defn ^:private drop-food [place]
   (-> place (update :food inc) (update :ant dissoc :food)))
@@ -50,6 +50,6 @@
         :else (rand-behavior foraging place)))))
 
 (defn build [place]
-  (struct ant (rand-int 8) (agent (:location place))))
+  (map->Ant {:dir (rand-int 8) :agent (agent (:location place))}))
 
 (def food? (comp boolean :food))

@@ -1,12 +1,11 @@
 (ns demo.store
   (:require [demo.config :refer [config]]))
 
-(defstruct ^:private Cell
-  :food :pher :location) ; May also have :ant and :home
+(defrecord ^:private Cell [food pher location ant home])
 
 ;; World is a 2D vector of refs to cells.
 (def ^:private world
-  (mapv (fn [x] (mapv #(ref (struct Cell 0 0 [x %]))
+  (mapv (fn [x] (mapv #(ref (map->Cell {:food 0 :pher 0 :location [x %]}))
                       (config :y-range)))
         (config :x-range)))
 
