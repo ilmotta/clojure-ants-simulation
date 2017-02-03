@@ -6,6 +6,8 @@ This project uses [lein](https://leiningen.org/). Run it with:
 $ lein run
 ```
 
+![demo-sample](https://cloud.githubusercontent.com/assets/46027/22576690/23b64650-e9a4-11e6-9bfd-529a9ff7f848.gif)
+
 ## Motivation
 
 After watching Rich's great [talk about concurrency in Clojure](https://www.youtube.com/watch?v=dGVqrGmwOAw),
