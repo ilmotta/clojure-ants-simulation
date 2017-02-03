@@ -38,7 +38,8 @@
   (update place :pher * evaporation-rate))
 
 (defn nearby-places [location direction]
-  (->> (map #(% direction) [identity dec inc])
+  (->> direction
+       ((juxt identity dec inc))
        (map (partial delta-location location))
        (map store/place)))
 
