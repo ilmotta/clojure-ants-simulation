@@ -23,14 +23,9 @@
 (def y-scale (* (config :scale) (config :dim)))
 
 (def directions
-  {0 [2 0 2 4]
-   1 [4 0 0 4]
-   2 [4 2 0 2]
-   3 [4 4 0 0]
-   4 [2 4 2 0]
-   5 [0 4 4 0]
-   6 [0 2 4 2]
-   7 [0 0 4 4]})
+  {0 [2 0 2 4], 1 [4 0 0 4], 2 [4 2 0 2]
+   3 [4 4 0 0], 4 [2 4 2 0], 5 [0 4 4 0]
+   6 [0 2 4 2], 7 [0 0 4 4]})
 
 (defn fill-cell [#^Graphics graphics x y color]
   (doto graphics
@@ -39,9 +34,7 @@
                (config :scale) (config :scale))))
 
 (defn ant-color [ant]
-  (if (ant/food? ant)
-    (Color/red)
-    (Color/black)))
+  (if (ant/food? ant) (Color/red) (Color/black)))
 
 (defn food-color [food]
   (new Color 255 0 0 (scaled-color food (config :food-scale))))
@@ -57,19 +50,15 @@
       (.setColor (ant-color ant))
       (.drawLine (+ hx x-scale) (+ hy y-scale) (+ tx x-scale) (+ ty y-scale)))))
 
-(defn render-place [graphics {:keys [pher food ant] :as place} x y]
-  (when (world/pheromone? place) (fill-cell graphics x y (pheromone-color pher)))
-  (when (world/food? place) (fill-cell graphics x y (food-color food)))
-  (when (world/ant? place) (render-ant ant graphics x y)))
-
 (defn render-all-places [img]
   (let [places (dosync (store/place))
         graphics (.getGraphics img)]
     (dorun
-      (for [x (config :x-range)
-            y (config :y-range)]
-        (let [place (places (+ (* x (config :dim)) y))]
-          (render-place graphics place x y))))))
+      (for [x (config :x-range) y (config :y-range)]
+        (let [{:keys [pher food ant] :as place} (places (+ (* x (config :dim)) y))]
+          (when (world/pheromone? place) (fill-cell graphics x y (pheromone-color pher)))
+          (when (world/food? place) (fill-cell graphics x y (food-color food)))
+          (when (world/ant? place) (render-ant ant graphics x y)))))))
 
 (defn fill-world-bg [img]
   (doto (.getGraphics img)
@@ -93,11 +82,6 @@
   (doto (proxy [JPanel] [] (paint [g] (render g)))
     (.setPreferredSize (new Dimension x-scale y-scale))))
 
-
-;;; =====
-;;; Setup
-;;; =====
-
 (def animator (agent nil))
 (def evaporator (agent nil))
 
@@ -113,41 +97,20 @@
   (Thread/sleep (config :evaporation-sleep-ms))
   nil)
 
-(def ^:private setup-food
-  (partial map #(assoc % :food (rand-int (config :food-range)))))
-
-(def ^:private setup-home
-  (partial map #(assoc % :home true)))
-
-(def ^:private setup-ants
-  (partial map #(assoc % :ant (ant/build %))))
-
-(defn setup []
-  (dosync
-    (-> (world/home-places) setup-home store/update-place)
-    (-> (world/home-places) setup-ants store/update-place)
-    (-> (world/rand-food-places) setup-food store/update-place)))
-
-(defn start-animation []
-  (send-off animator animation-loop))
-
-(defn start-evaporation []
-  (send-off evaporator evaporation-loop))
-
-(defn behave-loop [location]
+(defn ant-loop [location]
   (Thread/sleep (config :ant-sleep-ms))
   (dosync
-    (send-off *agent* behave-loop)
+    (send-off *agent* ant-loop)
     (-> location store/place ant/behave store/update-place :location)))
 
 (defn start-ants []
   (dorun
     (for [place (->> (dosync (store/place)) (filter :ant))]
-      (send-off (get-in place [:ant :agent]) behave-loop))))
+      (send-off (get-in place [:ant :agent]) ant-loop))))
 
 (defn -post-init [this]
   (doto this (.setContentPane panel) (.setVisible true))
-  (start-animation)
-  (start-evaporation)
-  (setup)
+  (send-off animator animation-loop)
+  (send-off evaporator evaporation-loop)
+  (dosync (world/setup))
   (start-ants))
