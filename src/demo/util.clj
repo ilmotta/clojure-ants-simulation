@@ -26,5 +26,5 @@
         i
         (recur (inc i) (+ (slices i) sum))))))
 
-(defn scaled-color [value max-value]
+(defn scaled-color [{:keys [value max-value]}]
   (int (min 255 (* 255 (/ value max-value)))))
