@@ -28,3 +28,9 @@
 
 (defn scaled-color [{:keys [value max-value]}]
   (int (min 255 (* 255 (/ value max-value)))))
+
+(defn delta [[ax ay bx by] [x y]]
+  [(+ ax x) (+ ay y) (+ bx x) (+ by y)])
+
+(defn scale [[h t] amount]
+  [(* amount h) (* amount t)])

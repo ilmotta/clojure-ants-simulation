@@ -4,7 +4,7 @@
            (java.awt Color Dimension)
            (java.awt.image BufferedImage)))
 
-(defn ^:private colors [color]
+(defn colors [color]
   (if (instance? Color color)
     color
     (color {:blue (Color/blue)
@@ -26,7 +26,7 @@
     (.setDefaultCloseOperation JFrame/EXIT_ON_CLOSE)
     (.setVisible true)))
 
-(defn ^:private render [graphics width height on-render]
+(defn render [graphics width height on-render]
   (let [img (make-img [width height])]
     (on-render img)
     (.drawImage graphics img 0 0 nil)

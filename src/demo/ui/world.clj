@@ -1,23 +1,26 @@
 (ns demo.ui.world
-  (:require [demo.config :as config]
-            [demo.ui.ant :as ui-ant]
+  (:require [demo.ui.ant :as ui-ant]
             [demo.world :as world]
             [demo.ui.core :as ui]
             [demo.util :as util]))
 
-(defn ^:private food-color [food]
-  (ui/color [255 0 0] food config/food-scale))
+(defn food-color [config food]
+  (ui/color [255 0 0] food (:food-scale config)))
 
-(defn ^:private pheromone-color [pheromone]
-  (ui/color [0 255 0] pheromone config/pher-scale))
+(defn pheromone-color [config pheromone]
+  (ui/color [0 255 0] pheromone (:pher-scale config)))
 
-(defn ^:private render-place-as-pheromone [img pher x y]
-  (ui/make-rect img {:color (pheromone-color pher)
-                     :fill [(* x config/scale) (* y config/scale) config/scale config/scale]}))
+(defn render-place-as-pheromone [img config pher x y]
+  (ui/make-rect img {:color (pheromone-color config pher)
+                     :fill [(* x (:scale config))
+                            (* y (:scale config))
+                            (:scale config) (:scale config)]}))
 
-(defn ^:private render-place-as-food [img food x y]
-  (ui/make-rect img {:color (food-color food)
-                     :fill [(* x config/scale) (* y config/scale) config/scale config/scale]}))
+(defn render-place-as-food [img config food x y]
+  (ui/make-rect img {:color (food-color config food)
+                     :fill [(* x (:scale config))
+                            (* y (:scale config))
+                            (:scale config) (:scale config)]}))
 
 (defn render-home [img {:keys [scale home-off nants-sqrt]}]
   (ui/make-rect img
@@ -29,10 +32,9 @@
   (ui/make-rect img {:color :white
                      :fill [0 0 (.getWidth img) (.getHeight img)]}))
 
-(defn render-all-places [img places]
-  (dorun
-    (for [x config/x-range y config/y-range]
-      (let [{:keys [pher food ant] :as place} (places (+ (* x config/dim) y))]
-        (when (world/pheromone? place) (render-place-as-pheromone img pher x y))
-        (when (world/food? place) (render-place-as-food img food x y))
-        (when (world/ant? place) (ui-ant/render-ant ant img x y))))))
+(defn render-all-places [img config world]
+  (doseq [x (range (:dim config)), y (range (:dim config))]
+    (let [{:keys [pher food ant]} (-> world (get-in [x y]) deref)]
+      (when (pos? pher) (render-place-as-pheromone img config pher x y))
+      (when (pos? food) (render-place-as-food img config food x y))
+      (when ant (ui-ant/render-ant ant img config x y)))))
