@@ -4,7 +4,7 @@
             [demo.ui.core :as ui]
             [demo.ui.world :as ui-world]
             [demo.world :as world])
-  (:gen-class :main -main))
+  (:gen-class))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ant sim ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;   Copyright (c) Rich Hickey. All rights reserved.
@@ -96,7 +96,7 @@
         (:world)
         (get-in random-loc)
         (alter assoc :food (rand-int (get-in @state [:config :food-range])))))
-  state) 
+  state)
 
 (defn reset-food [state]
   (doseq [row (:world @state), col row]
@@ -153,3 +153,6 @@
     (init-applet)
     (init-frame)
     (start)))
+
+(comment
+  (-main))

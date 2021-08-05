@@ -1,5 +1,5 @@
 (ns demo.ant-test
-  (:require [clojure.test :refer :all]
+  (:require [clojure.test :refer [deftest testing is]]
             [demo.ant :as ant]))
 
 (deftest drop-food

@@ -1,0 +1,49 @@
+* Ants Simulation in Clojure
+
+** Motivation
+
+Learn about Clojure's concurrency strategies and refactor the original code from
+Rich's [[https://www.youtube.com/watch?v=dGVqrGmwOAw][talk about concurrency in Clojure]].
+
+** Running the simulation
+
+This project uses the [[https://clojure.org/reference/deps_and_cli][clojure CLI]] and =make= tools to build and execute the
+application. It has been tested with OpenJDK 11.
+
+#+begin_example sh
+make
+#+end_example
+
+#+caption: application-demo
+[[https://cloud.githubusercontent.com/assets/46027/22576690/23b64650-e9a4-11e6-9bfd-529a9ff7f848.gif]]
+Fig. 1: Application demo
+
+You can also run it using Docker (tested with v20.10.x), but I've only tested it
+in a GNU/Linux distribution, hence macOS and Windows are not supported.
+
+#+begin_example sh
+make docker/build
+make docker/run/release
+#+end_example
+
+You can remove the container and image with:
+
+#+begin_example sh
+make docker/clean
+#+end_example
+
+** Resources
+
+- [[https://www.youtube.com/watch?v=dGVqrGmwOAw][Rich's talk]]
+- [[https://github.com/dimhold/clojure-concurrency-rich-hickey/blob/master/ClojureConcurrencyTalk.pdf?raw=true][Talk's slides]]
+- [[https://github.com/juliangamble/clojure-ants-simulation][Original source (not really from Rich)]]
+
+** Original Notice
+
+Ants is based on the Clojure Ants Simulation by Rich Hickey.
+
+Copyright (c) Rich Hickey. All rights reserved. The use and distribution terms
+for this software are covered by the Common Public License 1.0 ([[http://opensource.org/licenses/cpl1.0.php][cpl]]) which can
+be found in the file cpl.txt at the root of this distribution. By using this
+software in any fashion, you are agreeing to be bound by the terms of this
+license. You must not remove this notice, or any other, from this software.

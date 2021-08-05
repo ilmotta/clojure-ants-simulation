@@ -1,0 +1,29 @@
+{:paths ["src"]
+
+ :deps {org.clojure/clojure {:mvn/version "1.10.3"}}
+
+ :aliases
+ {:run
+  {:main-opts ["-m" "demo.core"]}
+
+  :test
+  {:extra-paths ["test"]
+   :extra-deps {lambdaisland/kaocha {:mvn/version "1.0.861"}}
+   :main-opts ["-m" "kaocha.runner"]}
+
+  :uberjar
+  {:replace-deps {com.github.seancorfield/depstar {:mvn/version "2.0.216"}}
+   :exec-fn      hf.depstar/uberjar
+   :exec-args    {:main-class demo.core
+                  :jvm-opts [
+                             ;; Typically this results in smaller class sizes and faster startup times.
+                             "-Dclojure.compiler.direct-linking=true"
+
+                             ;; Reduce class size and make classloading faster.
+                             "-Dclojure.compiler.elide-meta=[:doc :file :line :added]"
+
+                             "-Ddepstar.debug=true"]
+                  :jar "target/app.jar"
+                  :aot true
+                  :verbose true
+                  :exclude ["dev/"]}}}}

@@ -1,26 +1,48 @@
 REPO := ilmotta/ants-simulation
-TAG := 0.0.1
+TAG := 1.0.0
 CONTAINER_NAME := ants-simulation
-DISPLAY := $(shell ifconfig en0 | grep inet | awk '$$1=="inet" {print $$2}')
+DOCKER_JVM_OPTS := -XX:+UseContainerSupport -XX:MaxRAMPercentage=85 -XX:+UnlockExperimentalVMOptions
+JVM_OPTS := -XX:MaxRAMPercentage=85 -XX:+UnlockExperimentalVMOptions
 
-.PHONY: all start docker/build docker/start docker/clean
+.PHONY: all test
 
-all: start
+all: run
 
-start:
-	@lein run
+check:
+	clojure -M --eval :ok
+
+run:
+	clojure -M:run
+
+run/release:
+	java $(JVM_OPTS) -jar target/app.jar
+
+build:
+	clojure -X:uberjar
+
+test:
+	clojure -M:test
+
+clean:
+	rm -rf target/ .cpcache/
 
 docker/build:
 	@docker build --tag $(REPO):$(TAG) --rm .
 
-# Run to add IP to access control list
-#   $ xhost + $(ifconfig en0 | grep inet | awk '$1=="inet" {print $2}')
-docker/start:
+# Run to add IP to access control list.
+#   $ xhost +local:docker
+docker/run/release:
 	@docker run -it --rm \
 		--name $(CONTAINER_NAME) \
-		-e DISPLAY=$(DISPLAY):0 \
+		--network=host \
+		-e DISPLAY=$(DISPLAY) \
 		-v /tmp/.X11-unix:/tmp/.X11-unix \
-		$(REPO):$(TAG) java -jar app-standalone.jar
+		$(REPO):$(TAG) java $(JVM_OPTS) -jar /usr/src/app/app.jar
+
+docker/shell:
+	@docker run -it --rm \
+		--name $(CONTAINER_NAME) \
+		$(REPO):$(TAG) /bin/sh
 
 docker/clean:
 	@docker rm -f $(CONTAINER_NAME); \
