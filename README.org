@@ -8,15 +8,11 @@ Rich's [[https://www.youtube.com/watch?v=dGVqrGmwOAw][talk about concurrency in 
 ** Running the simulation
 
 This project uses the [[https://clojure.org/reference/deps_and_cli][clojure CLI]] and =make= tools to build and execute the
-application. It has been tested with OpenJDK 11.
+application. It has been tested with OpenJDK 11. Simply call =make= to run it
+and =make test= to run all the unit tests.
 
-#+begin_example sh
-make
-#+end_example
-
-#+caption: application-demo
+#+caption: Fig. 1: Application demo
 [[https://cloud.githubusercontent.com/assets/46027/22576690/23b64650-e9a4-11e6-9bfd-529a9ff7f848.gif]]
-Fig. 1: Application demo
 
 You can also run it using Docker (tested with v20.10.x), but I've only tested it
 in a GNU/Linux distribution, hence macOS and Windows are not supported.
