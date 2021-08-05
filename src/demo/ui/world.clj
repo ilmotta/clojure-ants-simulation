@@ -1,8 +1,7 @@
 (ns demo.ui.world
   (:require [demo.ui.ant :as ui-ant]
-            [demo.world :as world]
-            [demo.ui.core :as ui]
-            [demo.util :as util]))
+            [demo.ui.core :as ui])
+  (:import (java.awt.image BufferedImage)))
 
 (defn food-color [config food]
   (ui/color [255 0 0] food (:food-scale config)))
@@ -28,7 +27,7 @@
                  :border [(* scale home-off) (* scale home-off)
                           (* scale nants-sqrt) (* scale nants-sqrt)]}))
 
-(defn fill-world-bg [img]
+(defn fill-world-bg [^BufferedImage img]
   (ui/make-rect img {:color :white
                      :fill [0 0 (.getWidth img) (.getHeight img)]}))
 

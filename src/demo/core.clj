@@ -2,18 +2,18 @@
   (:require [demo.ant :as ant]
             [demo.domain :as domain]
             [demo.ui.core :as ui]
-            [demo.ui.world :as ui-world]
-            [demo.world :as world])
+            [demo.ui.world :as ui-world])
+  (:import (javax.swing JPanel))
   (:gen-class))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ant sim ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;   Copyright (c) Rich Hickey. All rights reserved.
-;   The use and distribution terms for this software are covered by the
-;   Common Public License 1.0 (http://opensource.org/licenses/cpl.php)
-;   which can be found in the file CPL.TXT at the root of this distribution.
-;   By using this software in any fashion, you are agreeing to be bound by
-;   the terms of this license.
-;   You must not remove this notice, or any other, from this software.
+;; Copyright (c) Rich Hickey. All rights reserved.
+;;
+;; The use and distribution terms for this software are covered by the Common
+;; Public License 1.0 (http://opensource.org/licenses/cpl.php) which can be
+;; found in the file CPL.TXT at the root of this distribution. By using this
+;; software in any fashion, you are agreeing to be bound by the terms of this
+;; license. You must not remove this notice, or any other, from this software.
 
 (defonce animator (agent nil))
 (defonce evaporator (agent nil))
@@ -109,7 +109,7 @@
 
 (defn animation-loop [_ state]
   (send-off *agent* animation-loop state)
-  (.repaint (:panel @state))
+  (.repaint ^JPanel (:panel @state))
   (Thread/sleep (get-in @state [:config :animation-sleep-ms]))
   nil)
 
@@ -156,3 +156,8 @@
 
 (comment
   (-main))
+
+(comment
+  (dosync
+   (reset-pheromones app-state)
+   (reset-food app-state)))

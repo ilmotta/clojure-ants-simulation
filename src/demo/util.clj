@@ -21,12 +21,17 @@
   [slices]
   (let [total (reduce + slices)
         r (rand total)]
-    (loop [i 0 sum 0]
-      (if (< r (+ (slices i) sum))
-        i
-        (recur (inc i) (+ (slices i) sum))))))
+    (reduce
+     (fn [{:keys [i slice-sum]} slice]
+       (let [slice-sum (+ slice-sum slice)]
+         (if (< r slice-sum)
+           (reduced i)
+           {:i (inc i)
+            :slice-sum slice-sum})))
+     {:i 0 :slice-sum 0}
+     slices)))
 
-(defn scaled-color [{:keys [value max-value]}]
+(defn scaled-color ^long [{:keys [value max-value]}]
   (int (min 255 (* 255 (/ value max-value)))))
 
 (defn delta [[ax ay bx by] [x y]]
