@@ -40,20 +40,20 @@
           (paint [graphics] (render graphics width height on-render)))
     (.setPreferredSize (new Dimension width height))))
 
-(defn make-rect [img opts]
+(defn make-rect [img {:keys [color border fill]}]
   (let [graphics (.getGraphics img)]
-    (when-let [color (:color opts)]
+    (when color
       (.setColor graphics (colors color)))
-    (when-let [border (:border opts)]
+    (when border
       (.drawRect graphics (nth border 0) (nth border 1) (nth border 2) (nth border 3)))
-    (when-let [fill (:fill opts)]
+    (when fill
       (.fillRect graphics (nth fill 0) (nth fill 1) (nth fill 2) (nth fill 3)))))
 
-(defn make-line [img opts]
+(defn make-line [img {:keys [color border]}]
   (let [graphics (.getGraphics img)]
-    (when-let [color (:color opts)]
+    (when color
       (.setColor graphics (colors color)))
-    (when-let [border (:border opts)]
+    (when border
       (.drawLine graphics (nth border 0) (nth border 1) (nth border 2) (nth border 3)))))
 
 (defn make-applet [panel]
