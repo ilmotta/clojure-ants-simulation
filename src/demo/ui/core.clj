@@ -4,13 +4,16 @@
            (java.awt Color Dimension)
            (java.awt.image BufferedImage)))
 
+(def all-colors
+  {:blue (Color/blue)
+   :red (Color/red)
+   :black (Color/black)
+   :white (Color/white)})
+
 (defn colors [color]
   (if (instance? Color color)
     color
-    (color {:blue (Color/blue)
-            :red (Color/red)
-            :black (Color/black)
-            :white (Color/white)})))
+    (all-colors color)))
 
 (defn color [[r g b] value max-value]
   (new Color r g b (util/scaled-color {:value value :max-value max-value})))
